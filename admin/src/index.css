@@ -1,1 +1,9 @@
 @import "tailwindcss";
+@theme {
+  --color-primary: #5f6FFF;
+  --auto-grid-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+::-webkit-scrollbar{
+  @apply hidden
+}
