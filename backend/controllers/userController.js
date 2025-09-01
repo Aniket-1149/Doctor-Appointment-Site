@@ -85,7 +85,7 @@ const getProfile = async (req, res) => {
 
     try {
 
-        const { userId } = req.body
+        const { userId } = req.user
         const userData = await userModel.findById(userId).select('-password')
 
         res.json({ success: true, userData })
@@ -98,29 +98,31 @@ const getProfile = async (req, res) => {
 
 // API to update user profile
 const updateProfile = async (req, res) => {
-
     try {
-
-        const { userId, name, phone, address, dob, gender } = req.body
+        const { name, phone, address, dob, gender } = req.body
         const imageFile = req.file
+        const userId = req.user.userId   // ✅ get userId from token, not body
 
         if (!name || !phone || !dob || !gender) {
             return res.json({ success: false, message: "Data Missing" })
-
         }
 
-        await userModel.findByIdAndUpdate(userId, { name, phone, address: JSON.parse(address), dob, gender })
+        const updateData = {
+            name,
+            phone,
+            dob,
+            gender,
+            address: address ? JSON.parse(address) : {}
+        }
 
         if (imageFile) {
-            
-            //upload image to  cloudinary
-            const imageUpload = await cloudinary.uploader.upload(imageFile.path,{resource_type:'image'})
-            const imageURL = imageUpload.secure_url
-
-            await userModel.findByIdAndUpdate(userId,{image:imageURL})
+            const imageUpload = await cloudinary.uploader.upload(imageFile.path, { resource_type: 'image' })
+            updateData.image = imageUpload.secure_url
         }
 
-        res.json({success:true,message:"Profile Updated"})
+        const updatedUser = await userModel.findByIdAndUpdate(userId, updateData, { new: true }).select('-password')
+
+        res.json({ success: true, message: "Profile Updated", userData: updatedUser }) // ✅ send updated user back
 
     } catch (error) {
         console.log(error);
